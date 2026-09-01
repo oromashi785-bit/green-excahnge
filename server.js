@@ -112,6 +112,9 @@ const adminUser = (user) => ({ ...publicUser(user), createdAt:user.createdAt, pa
 app.use('/api', async (req, res, next) => {
   try {
     await ensureUserStore();
+    // Serverless instances do not share memory. Always refresh accounts so a
+    // user created by one instance can authenticate through another instance.
+    if (usersCollection) users = await usersCollection.find({}).toArray();
     next();
   } catch (error) {
     console.error('User store initialisation failed:', error.message);
@@ -172,7 +175,9 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   if (!/^[A-Za-z0-9._-]{3,32}$/.test(username) || password.length < 4 || durationMs < 60000) return res.status(400).json({ error:'Enter a valid username, password, and access time' });
   if (users.some((user) => user.username.toLowerCase() === username.toLowerCase())) return res.status(409).json({ error:'Username already exists' });
   const user = { id:crypto.randomUUID(), username, passwordHash:hashPassword(password), role:'user', expiresAt:Date.now()+durationMs, createdAt:new Date().toISOString() };
-  users.push(user); await saveUsers(); res.status(201).json(adminUser(user));
+  if (usersCollection) await usersCollection.insertOne(user);
+  else { users.push(user); await saveUsers(); }
+  res.status(201).json(adminUser(user));
 });
 
 app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
@@ -182,10 +187,18 @@ app.put('/api/admin/users/:id', requireAdmin, async (req, res) => {
   if (req.body.password !== undefined && String(req.body.password).trim()) user.passwordHash = hashPassword(String(req.body.password).trim());
   if (req.body.adjustMs !== undefined) user.expiresAt = Math.max(Date.now(), Number(user.expiresAt || Date.now()) + Number(req.body.adjustMs));
   if (req.body.expiresAt !== undefined) user.expiresAt = Number(req.body.expiresAt);
-  await saveUsers(); res.json(adminUser(user));
+  if (usersCollection) await usersCollection.replaceOne({ id:user.id }, user);
+  else await saveUsers();
+  res.json(adminUser(user));
 });
 
 app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  if (usersCollection) {
+    const result = await usersCollection.deleteOne({ id:req.params.id, role:{ $ne:'admin' } });
+    if (!result.deletedCount) return res.status(404).json({ error:'User not found' });
+    await sessionsCollection.deleteMany({ userId:req.params.id });
+    return res.json({ ok:true });
+  }
   const before = users.length;
   users = users.filter((entry) => !(entry.id === req.params.id && entry.role !== 'admin'));
   if (users.length === before) return res.status(404).json({ error:'User not found' });
@@ -483,6 +496,20 @@ app.get('/api/tiktok-user', requireAuth, async (req, res) => {
 });
 
 app.use((req, res, next) => req.path === '/users.json' ? res.status(404).end() : next());
+app.get('/admin.html', (req, res) => {
+  const passwordToggleStyles = `<style>
+    .password-wrap{position:relative}.password-wrap input{padding-right:54px}
+    .toggle-password{position:absolute;right:5px;top:50%;width:42px;height:36px;transform:translateY(-50%);border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:11px;font-weight:800;cursor:pointer}
+    .toggle-password:hover,.toggle-password:focus-visible{outline:0;background:rgba(69,245,155,.1);color:var(--green)}
+  </style>`;
+  const passwordToggleScript = `<script>
+    (()=>{const input=document.getElementById('newPass');if(!input)return;const wrap=document.createElement('div');wrap.className='password-wrap';input.parentNode.insertBefore(wrap,input);wrap.appendChild(input);const button=document.createElement('button');button.type='button';button.className='toggle-password';button.textContent='Show';button.setAttribute('aria-label','Show password');button.setAttribute('aria-pressed','false');button.onclick=()=>{const visible=input.type==='text';input.type=visible?'password':'text';button.textContent=visible?'Show':'Hide';button.setAttribute('aria-label',visible?'Show password':'Hide password');button.setAttribute('aria-pressed',String(!visible));input.focus()};wrap.appendChild(button)})();
+  </script>`;
+  const html = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8')
+    .replace('</head>', `${passwordToggleStyles}</head>`)
+    .replace('</body>', `${passwordToggleScript}</body>`);
+  res.type('html').send(html);
+});
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
