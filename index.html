@@ -2093,9 +2093,19 @@
   (async function verifyAccess(){
     const token = localStorage.getItem('walletAuthToken');
     if (!token) return location.replace('/login.html');
+    const sessionRequest = () => fetch('/api/session', {
+      cache:'no-store',
+      headers:{ Authorization:`Bearer ${token}` }
+    });
+    const isLoggedOut = response => response.status === 401 || response.status === 403;
+    const redirectToLogin = reason => {
+      localStorage.removeItem('walletAuthToken');
+      location.replace(`/login.html${reason ? `?reason=${reason}` : ''}`);
+    };
     try {
-      const response = await fetch('/api/session', { headers:{ Authorization:`Bearer ${token}` } });
-      if (!response.ok) throw new Error();
+      const response = await sessionRequest();
+      if (isLoggedOut(response)) return redirectToLogin();
+      if (!response.ok) throw new Error('Session service is temporarily unavailable');
       const { user } = await response.json();
       document.body.classList.remove('auth-pending');
       const toast = document.getElementById('accessTimeToast');
@@ -2105,14 +2115,12 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 4000);
       setInterval(async () => {
-        const check = await fetch('/api/session', { headers:{ Authorization:`Bearer ${token}` } }).catch(() => null);
-        if (!check || !check.ok) {
-          localStorage.removeItem('walletAuthToken');
-          location.replace('/login.html?reason=new-login');
-        }
-      }, 4000);
+        const check = await sessionRequest().catch(() => null);
+        if (check && isLoggedOut(check)) redirectToLogin('session-ended');
+      }, 15000);
     } catch {
-      localStorage.removeItem('walletAuthToken');
+      // Keep the token when the network or account service is temporarily
+      // unavailable. A reload can resume the existing session.
       location.replace('/login.html');
     }
   })();
