@@ -653,6 +653,7 @@
   }
 
   .preset-card {
+    position: relative;
     background: var(--bg);
     border: 1px solid var(--border-line);
     border-radius: var(--radius-md);
@@ -665,6 +666,11 @@
   .preset-card.selected {
     border-color: var(--primary);
     background: #FFF8F9;
+  }
+
+  .preset-card:focus-visible {
+    outline: 3px solid rgba(254,44,85,.18);
+    outline-offset: 2px;
   }
 
   .preset-coin-val {
@@ -1101,8 +1107,11 @@
   }
   .gifter-copy h3 { margin-bottom: 3px; font-size: 16px; font-weight: 700; color: var(--text); }
   .gifter-copy p { color: var(--text-dim); font-size: 13.5px; line-height: 1.35; }
-  .success-footer { width:100%; }
-  .success-footer .btn { min-height:56px; border-radius:28px; font-size:17px; background:#18cf24; }
+  .success-footer { width:100%; padding:14px 20px max(16px,env(safe-area-inset-bottom)); background:linear-gradient(180deg,rgba(255,255,255,.72),#fff 35%); }
+  .success-footer .btn { min-height:58px; display:flex; align-items:center; justify-content:center; gap:11px; border-radius:18px; font-size:16px; font-weight:800; background:linear-gradient(135deg,#20d52c,#12b91f); box-shadow:0 12px 28px rgba(20,190,31,.24); }
+  .success-back-icon { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,.2); transition:transform .18s ease; }
+  .success-back-icon svg { width:18px; height:18px; }
+  .success-footer .btn:hover .success-back-icon { transform:translateX(-3px); }
 
   .live-card { 
     display: flex; 
@@ -1143,11 +1152,15 @@
   .live-explore-btn:active { transform: scale(0.96); }
   .live-explore-btn:hover { background: var(--primary-hover); }
 
-  .processing-overlay { position:absolute; inset:0; z-index:290; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.60); opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .processing-overlay { position:absolute; inset:0; z-index:290; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(255,255,255,.82); backdrop-filter:blur(10px); opacity:0; pointer-events:none; transition:opacity .25s ease; }
   .processing-overlay.open { opacity:1; pointer-events:auto; }
-  .processing-spinner { width:60px; height:60px; border:6px solid transparent; border-top-color:var(--loader-primary); border-right-color:var(--loader-secondary); border-radius:50%; animation:smooth-processing-spin .72s linear infinite; will-change:transform; transform:translateZ(0); box-shadow:none; background:transparent; }
+  .processing-card { width:min(100%,270px); display:flex; flex-direction:column; align-items:center; padding:30px 24px 26px; border:1px solid rgba(22,24,35,.07); border-radius:28px; background:rgba(255,255,255,.96); box-shadow:0 24px 70px rgba(22,24,35,.16); }
+  .processing-spinner { width:66px; height:66px; border:6px solid #f0f1f4; border-top-color:var(--loader-primary); border-right-color:var(--loader-secondary); border-radius:50%; animation:smooth-processing-spin .8s cubic-bezier(.55,.12,.45,.88) infinite; will-change:transform; transform:translateZ(0); box-shadow:0 8px 24px rgba(254,44,85,.12); background:transparent; }
+  .processing-title { margin-top:19px; color:#161823; font-size:18px; font-weight:800; }
+  .processing-copy { margin-top:7px; color:#737b88; font-size:13px; text-align:center; line-height:1.45; }
   @keyframes smooth-processing-spin { to { transform:translateZ(0) rotate(360deg); } }
   .loader-dots { display:none; align-items:center; justify-content:center; gap:8px; }
+  .processing-card .loader-dots { min-height:66px; }
   .loader-dots span { width:11px; height:11px; border-radius:50%; background:var(--loader-primary); animation:loader-dot .75s ease-in-out infinite alternate; }
   .loader-dots span:nth-child(2) { background:var(--loader-secondary); animation-delay:.16s; }
   .loader-dots span:nth-child(3) { animation-delay:.32s; }
@@ -1169,6 +1182,7 @@
   .exchange-sheet { background:#fff; }
   .exchange-sheet > .top-bar { position:relative; justify-content:center; min-height:58px; padding:14px 18px 11px; border:0; box-shadow:none; }
   .exchange-sheet > .top-bar .back-btn { position:absolute; left:18px; background:transparent; }
+  .exchange-sheet > .top-bar .back-btn svg { width:24px; height:24px; }
   .exchange-sheet > .top-bar .top-title { font-size:19px; font-weight:750; }
   .exchange-sheet #giftHelpBtn { display:none; }
   .exchange-sheet .sheet-body { padding:12px 20px 28px; }
@@ -1202,7 +1216,8 @@
   .preset-card:hover { transform:none; border-color:#b7bdc7; }
   .preset-card:active { transform:scale(.98); }
   .preset-card.selected { border-color:#fe2c55; background:#fff4f6; box-shadow:0 0 0 2px rgba(254,44,85,.08); }
-  .preset-card.selected::after { content:'✓'; position:absolute; top:7px; right:9px; color:#fe2c55; font-size:11px; font-weight:900; }
+  .preset-card.selected::after { content:'✓'; position:absolute; top:7px; right:8px; width:20px; height:20px; display:grid; place-items:center; border-radius:50%; color:#fff; background:#fe2c55; font-size:12px; font-weight:900; box-shadow:0 4px 10px rgba(254,44,85,.25); animation:preset-check-in .2s ease-out; }
+  @keyframes preset-check-in { from { opacity:0; transform:scale(.55); } to { opacity:1; transform:scale(1); } }
   .preset-coin-val { margin-bottom:6px; font-size:16px; }
   .preset-usd-val { color:#727a87; font-size:14px; }
 
@@ -1314,7 +1329,9 @@
   <!-- EXCHANGE SHEET -->
   <div class="exchange-sheet" id="exchangeSheet">
     <div class="top-bar">
-      <button class="back-btn" id="closeExchangeSheet">‹</button>
+      <button class="back-btn" id="closeExchangeSheet" aria-label="Go back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
       <div class="top-title">Exchange</div>
       <button class="help-btn" id="giftHelpBtn" style="width:22px; height:22px; font-size:11px;">?</button>
     </div>
@@ -1334,6 +1351,7 @@
 
       <div class="tiktok-card-loader" id="tiktokCardLoader" aria-label="Loading TikTok profile">
         <div class="tiktok-card-spinner"></div>
+        <div class="loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
       </div>
 
       <!-- TikTok Profile Preview Card -->
@@ -1363,15 +1381,15 @@
 
       <!-- PRESET CARDS GRID -->
       <div class="preset-cards-container" id="presetCardsContainer">
-        <div class="preset-card selected" data-coins="250" data-usd="3.03">
+        <div class="preset-card" data-coins="250" data-usd="3.03" role="button" tabindex="0" aria-pressed="false">
           <div class="preset-coin-val"><img src="coin.png" alt="Coin" class="coin-icon"> 250</div>
           <div class="preset-usd-val">$3.03</div>
         </div>
-        <div class="preset-card" data-coins="500" data-usd="6.07">
+        <div class="preset-card" data-coins="500" data-usd="6.07" role="button" tabindex="0" aria-pressed="false">
           <div class="preset-coin-val"><img src="coin.png" alt="Coin" class="coin-icon"> 500</div>
           <div class="preset-usd-val">$6.07</div>
         </div>
-        <div class="preset-card" data-coins="15000" data-usd="182.04">
+        <div class="preset-card" data-coins="15000" data-usd="182.04" role="button" tabindex="0" aria-pressed="false">
           <div class="preset-coin-val"><img src="coin.png" alt="Coin" class="coin-icon"> 15,000</div>
           <div class="preset-usd-val">$182.04</div>
         </div>
@@ -1468,7 +1486,12 @@
   </div>
 
   <div class="processing-overlay" id="processingOverlay" role="status" aria-live="polite">
-    <div class="processing-spinner"></div>
+    <div class="processing-card">
+      <div class="processing-spinner"></div>
+      <div class="loader-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="processing-title">Completing exchange</div>
+      <div class="processing-copy">Please wait while your coins are securely processed.</div>
+    </div>
   </div>
 
   <!-- SUCCESS SCREEN -->
@@ -1502,7 +1525,10 @@
     </div>
 
     <div class="success-footer">
-      <button class="btn btn-primary" id="successDoneBtn">← Go back</button>
+      <button class="btn btn-primary" id="successDoneBtn">
+        <span class="success-back-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span>
+        <span>Back to rewards</span>
+      </button>
     </div>
   </div>
 
@@ -1510,9 +1536,9 @@
 
 <script>
   (function(){
-    let selectedMode = 'preset'; // 'preset' or 'custom'
-    let currentPresetCoins = 250;
-    let currentPresetUsd = 3.03;
+    let selectedMode = null; // 'preset', 'custom', or null
+    let currentPresetCoins = 0;
+    let currentPresetUsd = 0;
     let customCoinsStr = "";
     const DISPLAY_SETTINGS_KEY = 'walletDisplaySettings';
     let savedDisplaySettings = {};
@@ -1861,18 +1887,39 @@
       }
     }
 
-    presetCardsContainer.addEventListener('click', (e) => {
-      const card = e.target.closest('.preset-card');
+    function togglePresetCard(card) {
       if (!card) return;
-      
+
+      const isSelected = card.classList.contains('selected');
       document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.preset-card').forEach(c => c.setAttribute('aria-pressed', 'false'));
+
+      if (isSelected) {
+        selectedMode = null;
+        currentPresetCoins = 0;
+        currentPresetUsd = 0;
+        return;
+      }
+
       card.classList.add('selected');
-      
+      card.setAttribute('aria-pressed', 'true');
       selectedMode = 'preset';
       currentPresetCoins = parseInt(card.getAttribute('data-coins'), 10);
       currentPresetUsd = parseFloat(card.getAttribute('data-usd'));
       customTriggerBox.textContent = "Enter a custom number or amount";
       customTriggerBox.style.color = "var(--text-dim)";
+    }
+
+    presetCardsContainer.addEventListener('click', (e) => {
+      togglePresetCard(e.target.closest('.preset-card'));
+    });
+
+    presetCardsContainer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const card = e.target.closest('.preset-card');
+      if (!card) return;
+      e.preventDefault();
+      togglePresetCard(card);
     });
 
     customTriggerBox.addEventListener('click', () => {
@@ -1891,7 +1938,10 @@
         return;
       }
       selectedMode = 'custom';
-      document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.preset-card').forEach(c => {
+        c.classList.remove('selected');
+        c.setAttribute('aria-pressed', 'false');
+      });
       customTriggerBox.textContent = `${numericVal.toLocaleString()} Coins`;
       customTriggerBox.style.color = "var(--text)";
       customKeypadOverlay.classList.remove('open');
@@ -1956,11 +2006,12 @@
           coins: currentPresetCoins,
           usd: currentPresetUsd.toFixed(2)
         };
-      } else {
+      } else if(selectedMode === 'custom') {
         const coins = customCoinsStr === "" ? 0 : parseInt(customCoinsStr, 10);
         const usd = (coins * 0.0121).toFixed(2);
         return { coins, usd };
       }
+      return { coins: 0, usd: '0.00' };
     }
 
     triggerConfirmDialog.addEventListener('click', () => {
@@ -2069,14 +2120,14 @@
       profileRequestId++;
       hideTikTokProfile();
       
-      selectedMode = 'preset';
-      currentPresetCoins = 250;
-      currentPresetUsd = 3.03;
+      selectedMode = null;
+      currentPresetCoins = 0;
+      currentPresetUsd = 0;
       customCoinsStr = "";
       
-      document.querySelectorAll('.preset-card').forEach((c, idx) => {
-        if(idx === 0) c.classList.add('selected');
-        else c.classList.remove('selected');
+      document.querySelectorAll('.preset-card').forEach(c => {
+        c.classList.remove('selected');
+        c.setAttribute('aria-pressed', 'false');
       });
       
       customTriggerBox.textContent = "Enter a custom number or amount";
